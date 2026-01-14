@@ -76,6 +76,9 @@ MACRO(USE_CYCLUS lib_root src_root)
         SET(CYCPP "${CYCLUS_CORE_INCLUDE_DIRS}/../../bin/cycpp.py")
     ENDIF(NOT DEFINED CYCPP)
 
+    # get python interpreter location, as preprocessor uses cyclus module
+    GET_TARGET_PROPERTY(_INTERP Python3::Interpreter LOCATION)
+
     # make a build directory
     SET(BUILD_DIR ${PROJECT_BINARY_DIR}/${lib_root})
     FILE(MAKE_DIRECTORY ${BUILD_DIR})
@@ -96,7 +99,7 @@ MACRO(USE_CYCLUS lib_root src_root)
     #   3- otherwise, uses cpp
     IF(DEFINED ENV{CPP})
         SET(SYS_CPP "$ENV{CPP}")
-    ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
         SET(SYS_CPP "clang++")
     ELSE()
         SET(SYS_CPP "cpp")
@@ -129,7 +132,7 @@ MACRO(USE_CYCLUS lib_root src_root)
 
     # do all processing for CC file - always needed
     IF(NOT EXISTS ${CCOUT})
-        PREPROCESS_CYCLUS_FILE_(${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS})
+        PREPROCESS_CYCLUS_FILE_( ${_INTERP} ${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS})
     ENDIF(NOT EXISTS ${CCOUT})
     SET(
         "${lib_root}_CC"
@@ -141,7 +144,7 @@ MACRO(USE_CYCLUS lib_root src_root)
     IF(EXISTS "${HIN}")
         # Do all processing for header file
         IF(NOT EXISTS ${HOUT})
-            PREPROCESS_CYCLUS_FILE_( ${CYCPP} ${HIN} ${PREPROCESSOR} ${HFLAG} ${ORIG} ${INCL_ARGS})
+            PREPROCESS_CYCLUS_FILE_( ${_INTERP} ${CYCPP} ${HIN} ${PREPROCESSOR} ${HFLAG} ${ORIG} ${INCL_ARGS})
         ENDIF(NOT EXISTS ${HOUT})
         SET(
             "${lib_root}_H"
@@ -153,8 +156,9 @@ MACRO(USE_CYCLUS lib_root src_root)
         ADD_CUSTOM_COMMAND(
             OUTPUT ${CCOUT}
             OUTPUT ${HOUT}
-            COMMAND ${CYCPP} ${HIN} ${PREPROCESSOR} ${HFLAG} ${ORIG} ${INCL_ARGS}
-            COMMAND ${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS}
+            COMMAND ${_INTERP} ${CYCPP} ${HIN} ${PREPROCESSOR} ${HFLAG} ${ORIG} ${INCL_ARGS}
+            COMMAND ${_INTERP} ${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS}
+            DEPENDS ${_INTERP}
             DEPENDS ${HIN}
             DEPENDS ${CCIN}
             DEPENDS ${CYCPP}
@@ -167,7 +171,8 @@ MACRO(USE_CYCLUS lib_root src_root)
         # Make custom Makefile target for CC file alone if ho header
         ADD_CUSTOM_COMMAND(
             OUTPUT ${CCOUT}
-            COMMAND ${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS}
+            COMMAND ${_INTERP} ${CYCPP} ${CCIN} ${PREPROCESSOR} ${CCFLAG} ${ORIG} ${INCL_ARGS}
+            DEPENDS ${_INTERP}
             DEPENDS ${CCIN}
             DEPENDS ${CYCPP}
             DEPENDS ${CYCLUS_CUSTOM_HEADERS}
@@ -185,7 +190,7 @@ MACRO(USE_CYCLUS lib_root src_root)
 
     IF(EXISTS "${CCTIN}")
         MESSAGE(STATUS "Copying ${CCTIN} to ${CCTOUT}.")
-        EXECUTE_PROCESS(COMMAND ${CMD} ${CCTIN} ${CCTOUT})    
+        EXECUTE_PROCESS(COMMAND ${CMD} ${CCTIN} ${CCTOUT})
         SET("${lib_root}_TEST_CC" "${${lib_root}_TEST_CC}" "${CCTOUT}"
             CACHE INTERNAL "Agent test source" FORCE)
 
@@ -227,9 +232,9 @@ MACRO(USE_CYCLUS lib_root src_root)
     MESSAGE(STATUS "Finished construction of build files for agent: ${src_root}")
 ENDMACRO()
 
-MACRO(PREPROCESS_CYCLUS_FILE_ cycpp filein preproc flags orig incl_args)
-    MESSAGE(STATUS "Executing ${cycpp} ${filein} ${preproc} ${flags} ${orig} ${incl_args}")
-    EXECUTE_PROCESS(COMMAND ${cycpp} ${filein} ${PREPROCESSOR} ${flags}
+MACRO(PREPROCESS_CYCLUS_FILE_ _interp cycpp filein preproc flags orig incl_args)
+    MESSAGE(STATUS "Executing ${_interp} ${cycpp} ${filein} ${preproc} ${flags} ${orig} ${incl_args}")
+    EXECUTE_PROCESS(COMMAND ${_interp} ${cycpp} ${filein} ${PREPROCESSOR} ${flags}
                     ${orig} ${incl_args} RESULT_VARIABLE res_var)
     IF(NOT "${res_var}" STREQUAL "0")
         message(FATAL_ERROR "${cycpp} failed on '${filein}' with exit code '${res_var}'")
@@ -419,4 +424,3 @@ macro(fast_compile _srcname _gnuflags _clangflags _otherflags)
     set_source_files_properties("${_filename}" PROPERTIES COMPILE_FLAGS "${_otherflags}")
   endif()
 endmacro()
-

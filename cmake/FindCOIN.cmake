@@ -31,9 +31,18 @@ MESSAGE(STATUS "COIN_ROOT_DIR hint is : ${COIN_ROOT_DIR}")
 
 #
 # Find the path based on a required header file
+# --> o.k., this will not work on brew poured bottle install
+# of cbc & clp, cgl, ...
+# therefore, a patch is needed to find the individual include directories for:
+# * cbc
+# * clp
+# * coinutils
+# * osi
 #
 MESSAGE(STATUS "Coin multiple library dependency status:")
-FIND_PATH(COIN_INCLUDE_DIR coin/CbcModel.hpp
+
+# Find the include directories of header files
+FIND_PATH(COIN_CBC_INCLUDE_DIR coin/CbcModel.hpp
     HINTS "${COIN_INCLUDE_DIR}"
     HINTS "${COIN_ROOT_DIR}/include"
     ${DEPS_INCLUDE_HINTS}
@@ -41,14 +50,53 @@ FIND_PATH(COIN_INCLUDE_DIR coin/CbcModel.hpp
     HINTS /usr/include/
     HINTS /usr/local/
     HINTS /usr/local/include/
-    HINTS /usr/coin/
-    HINTS /usr/coin-Cbc/
-    HINTS /usr/local/coin/
-    HINTS /usr/local/coin-Cbc/
+    HINTS /usr/local/include/cbc/
     )
-set(COIN_INCLUDE_DIR ${COIN_INCLUDE_DIR}/coin)
-MESSAGE("\tCOIN Include Dir: ${COIN_INCLUDE_DIR}")
 
+set(COIN_CBC_INCLUDE_DIR ${COIN_CBC_INCLUDE_DIR}/coin)
+MESSAGE("\tCOIN CBC Include Dir: ${COIN_CBC_INCLUDE_DIR}")
+
+FIND_PATH(COIN_CLP_INCLUDE_DIR coin/ClpSolve.hpp
+    HINTS "${COIN_INCLUDE_DIR}"
+    HINTS "${COIN_ROOT_DIR}/include"
+    ${DEPS_INCLUDE_HINTS}
+    HINTS /usr/
+    HINTS /usr/include/
+    HINTS /usr/local/
+    HINTS /usr/local/include/
+    HINTS /usr/local/include/clp/
+    )
+
+set(COIN_CLP_INCLUDE_DIR ${COIN_CLP_INCLUDE_DIR}/coin)
+MESSAGE("\tCOIN CLP Include Dir: ${COIN_CLP_INCLUDE_DIR}")
+
+FIND_PATH(COIN_COINUTILS_INCLUDE_DIR coin/CoinBuild.hpp
+    HINTS "${COIN_INCLUDE_DIR}"
+    HINTS "${COIN_ROOT_DIR}/include"
+    ${DEPS_INCLUDE_HINTS}
+    HINTS /usr/
+    HINTS /usr/include/
+    HINTS /usr/local/
+    HINTS /usr/local/include/
+    HINTS /usr/local/include/coinutils/
+    )
+
+set(COIN_COINUTILS_INCLUDE_DIR ${COIN_COINUTILS_INCLUDE_DIR}/coin)
+MESSAGE("\tCOIN COINUTILS Include Dir: ${COIN_COINUTILS_INCLUDE_DIR}")
+
+FIND_PATH(COIN_OSI_INCLUDE_DIR coin/OsiSolverInterface.hpp
+    HINTS "${COIN_INCLUDE_DIR}"
+    HINTS "${COIN_ROOT_DIR}/include"
+    ${DEPS_INCLUDE_HINTS}
+    HINTS /usr/
+    HINTS /usr/include/
+    HINTS /usr/local/
+    HINTS /usr/local/include/
+    HINTS /usr/local/include/osi/
+    )
+
+set(COIN_OSI_INCLUDE_DIR ${COIN_OSI_INCLUDE_DIR}/coin)
+MESSAGE("\tCOIN OSI Include Dir: ${COIN_OSI_INCLUDE_DIR}")
 #
 # Find all coin library dependencies
 #
@@ -142,7 +190,10 @@ MESSAGE("\tCOIN BZ2: ${COIN_BZ2_LIBRARY}")
 
 INCLUDE(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(COIN DEFAULT_MSG
-    COIN_INCLUDE_DIR
+    COIN_CBC_INCLUDE_DIR
+    COIN_CLP_INCLUDE_DIR
+    COIN_COINUTILS_INCLUDE_DIR
+    COIN_OSI_INCLUDE_DIR
     COIN_CBC_LIBRARY
     COIN_CBC_SOLVER_LIBRARY
     COIN_CGL_LIBRARY
@@ -160,7 +211,7 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(COIN DEFAULT_MSG
 # Set all required cmake variables based on our findings
 #
 IF(COIN_FOUND)
-    SET(COIN_INCLUDE_DIRS ${COIN_INCLUDE_DIR})
+    SET(COIN_INCLUDE_DIRS ${COIN_CBC_INCLUDE_DIR};${COIN_CLP_INCLUDE_DIR};${COIN_COINUTILS_INCLUDE_DIR};${COIN_OSI_INCLUDE_DIR};)
     #SET(COIN_CLP_LIBRARIES "${COIN_CLP_LIBRARY};${COIN_COIN_UTILS_LIBRARY};${COIN_ZLIB_LIBRARY};${COIN_CLP_SOLVER_LIBRARY}")
     SET(COIN_CLP_LIBRARIES "${COIN_CLP_LIBRARY};${COIN_COIN_UTILS_LIBRARY};${COIN_ZLIB_LIBRARY}")
     IF (COIN_CLP_SOLVER_LIBRARY)
@@ -179,7 +230,7 @@ IF(COIN_FOUND)
     #SET(COIN_CBC_LIBRARIES "${COIN_CBC_LIBRARY};${COIN_CBC_SOLVER_LIBRARY};${COIN_CGL_LIBRARY};${COIN_OSI_LIBRARY};${COIN_OSI_CLP_LIBRARY};${COIN_CLP_LIBRARIES}")
     SET(COIN_LIBRARIES "${COIN_CBC_LIBRARIES}")
 
-    FILE(STRINGS "${COIN_INCLUDE_DIR}/CbcConfig.h" COIN_VERSION REGEX "define CBC_VERSION .*")
+    FILE(STRINGS "${COIN_CBC_INCLUDE_DIR}/CbcConfig.h" COIN_VERSION REGEX "define CBC_VERSION .*")
     STRING(REPLACE "#define CBC_VERSION " "" COIN_VERSION "${COIN_VERSION}")
     STRING(REPLACE "\"" "" COIN_VERSION "${COIN_VERSION}")
 ENDIF(COIN_FOUND)

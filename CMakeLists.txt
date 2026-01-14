@@ -153,7 +153,7 @@ IF(NOT CYCLUS_DOC_ONLY)
     SET(LIBS ${LIBS} PkgConfig::LIBXMLXX)
     message("-- LibXML++ Include Dir: ${LIBXMLXX_INCLUDE_DIRS}")
     message("-- LibXML++ Libraries: ${LIBXMLXX_LIBRARIES}")
-    
+
     # find lapack and link to it
     FIND_PACKAGE(LAPACK REQUIRED)
     set(LIBS ${LIBS} ${LAPACK_LIBRARIES})
@@ -190,7 +190,7 @@ IF(NOT CYCLUS_DOC_ONLY)
       SET(BOOST_ROOT "${DEPS_ROOT_DIR}")
       SET(BOOST_INCLUDEDIR "${DEPS_INCLUDE_HINTS}")
     endif (DEPS_ROOT_DIR)
-    FIND_PACKAGE(Boost COMPONENTS program_options filesystem system serialization REQUIRED)
+    FIND_PACKAGE(Boost COMPONENTS program_options filesystem serialization REQUIRED)
     MESSAGE("--    Boost Root: ${Boost_ROOT}")
     MESSAGE("--    Boost Include directory: ${Boost_INCLUDE_DIR}")
     MESSAGE("--    Boost Library directories: ${Boost_LIBRARY_DIRS}")
@@ -276,7 +276,7 @@ IF(NOT CYCLUS_DOC_ONLY)
     # Use new Python library finder
     find_package (Python3 REQUIRED COMPONENTS Interpreter Development)
     if(NOT DEFINED PYTHON_SITE_PACKAGES)
-        execute_process(COMMAND "${Python3_EXECUTABLE}" -m site --user-site
+        execute_process(COMMAND "${Python3_EXECUTABLE}" -c "import site; print(site.getsitepackages()[0])"
                         OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
@@ -318,8 +318,8 @@ IF(NOT CYCLUS_DOC_ONLY)
         SET(LIBS ${LIBS} ${Tcmalloc_LIBRARIES})
     endif(Cython_FOUND)
 
-    
-    IF(PARALLEL) 
+
+    IF(PARALLEL)
         FIND_PACKAGE(OpenMP REQUIRED)
         IF (OpenMP_CXX_FOUND)
             MESSAGE("-- OpenMP Version: ${OpenMP_CXX_VERSION}")
@@ -380,7 +380,7 @@ IF(NOT CYCLUS_DOC_ONLY)
     ADD_SUBDIRECTORY("${CYCLUS_AGENTS_DIR}")
     ADD_SUBDIRECTORY("${CYCLUS_CLI_DIR}")
     ADD_SUBDIRECTORY("${CYCLUS_CMAKE_DIR}")
-    
+
     ##############################################################################################
     ####################################### end includes #########################################
     ##############################################################################################
